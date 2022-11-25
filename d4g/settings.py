@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'sass_processor',
-    'home.apps.HomeConfig',
     'web.apps.WebConfig',
     'django_semantic_ui',
     'storages',
@@ -138,3 +137,5 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 #STATICFILES_LOCATION = 'static'
 #STATICFILES_STORAGE = 'custom_storages.StaticStorage'
+
+APP_NAME = 'Data4Good'

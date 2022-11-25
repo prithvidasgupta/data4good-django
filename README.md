@@ -13,8 +13,7 @@
 ## Project Layout
 | Key Folder | Parent Folder | Description |
 | - | - | - |
-| d4g | d4g | Holds the settings.py and root urls | 
-| home | home/templates/ | Holds the root HTML that has the style | 
+| d4g | d4g | Holds the settings.py and root urls |  
 | web | d4g| Holds all the templates and python files for website | 
 
 
