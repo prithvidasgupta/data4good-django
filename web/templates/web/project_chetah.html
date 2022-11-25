@@ -153,7 +153,7 @@
       {% include 'web/_nav.html' %}
       <div class="ui main text container">
           <div class="body-header">
-              <img src="/static/Chetah_Logo.png" alt="Product logo depicting cheetah jumping through search magnifying glass hoop">
+              <img src="/static/images/Chetah_Logo.png" alt="Product logo depicting cheetah jumping through search magnifying glass hoop">
             <h2> Search a phrase below and receive a list of UN and NGO report links in order of relevancy.</h2>
           </div>
           <div class="details-container">
@@ -232,7 +232,7 @@
               <div class="search-results-item">
                 <p><strong>Report Title:</strong> {{search_result.title}}</p>
                 <p><strong>Date Published:</strong> {{search_result.date}}</p>
-                <p><strong>Link:</strong> <a href={{search_result.link}}>{{search_result.link}}</a></p>
+                <p><a href={{search_result.link}}><strong>Go to Report</strong></a></p>
                 <p><strong>Cluster(s):</strong> {{search_result.cluster}} </p>
                 <p><strong>Summary:</strong> {{search_result.summary_short}} 
                   <button class="ui secondary button" data="{{search_result.summary_full}}" onclick="toggleModal(this);">

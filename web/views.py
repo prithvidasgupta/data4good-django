@@ -17,8 +17,47 @@ import json
 from sklearn.feature_extraction.text import TfidfVectorizer
 from scipy import sparse
 
+# Prepare dataframe
+#Uncomment in test, comment in prod
+df_pdfs = pd.read_csv('final_with_cluster.csv')
+#Uncomment in prod, comment in test
+#df_pdfs = pd.read_csv('/home/D4GUMSI/data4good-django/final_with_cluster.csv')
+            
+# Extract summaries from PDFs and queries from query list
+summaries = [x for x in df_pdfs.summary]
+# queries = [x for x in df_queries.Query]
 
-#class MainView(LoginRequiredMixin, View) :
+vectorizer = TfidfVectorizer()
+class BM25(object):
+    def __init__(self, b=0.75, k1=1.6):
+        self.vectorizer = TfidfVectorizer(norm=None, smooth_idf=False)
+        self.b = b
+        self.k1 = k1
+
+    def fit(self, X):
+        """ Fit IDF to documents X """
+        self.vectorizer.fit(X)
+        y = super(TfidfVectorizer, self.vectorizer).transform(X)
+        self.avdl = y.sum(1).mean()
+
+    def transform(self, q, X):
+        """ Calculate BM25 between query q and documents X """
+        b, k1, avdl = self.b, self.k1, self.avdl
+
+        # apply CountVectorizer
+        X = super(TfidfVectorizer, self.vectorizer).transform(X)
+        len_X = X.sum(1).A1
+        q, = super(TfidfVectorizer, self.vectorizer).transform([q])
+        assert sparse.isspmatrix_csr(q)
+
+        # convert to csc for better column slicing
+        X = X.tocsc()[:, q.indices]
+        denom = X + (k1 * (1 - b + b * len_X / avdl))[:, None]
+        idf = self.vectorizer._tfidf.idf_[None, q.indices] - 1.
+        numer = X.multiply(np.broadcast_to(idf, X.shape)) * (k1 + 1)                                                          
+        return (numer / denom).sum(1).A1
+
+
 class MainView(TemplateView) :
     def get(self, request):
         return render(request, 'web/home.html')
@@ -39,9 +78,6 @@ class ChetahView(TemplateView) :
 
     def post(self, request, **kwargs):
         if request.method == 'POST':
-            # Debug
-            #print(request.POST)
-
             context = {
                 'search_query': "",
                 'search_results': [],
@@ -49,46 +85,6 @@ class ChetahView(TemplateView) :
             query = request.POST['search-query']
             context['search_query'] = query
             
-            # Prepare dataframe
-            #Uncomment in test, comment in prod
-            # df_pdfs = pd.read_csv('final_with_cluster.csv')
-            #Uncomment in prod, comment in test
-            df_pdfs = pd.read_csv('/home/D4GUMSI/data4good-django/final_with_cluster.csv')
-            
-            # Extract summaries from PDFs and queries from query list
-            summaries = [x for x in df_pdfs.summary]
-            # queries = [x for x in df_queries.Query]
-
-            vectorizer = TfidfVectorizer()
-            class BM25(object):
-                def __init__(self, b=0.75, k1=1.6):
-                    self.vectorizer = TfidfVectorizer(norm=None, smooth_idf=False)
-                    self.b = b
-                    self.k1 = k1
-
-                def fit(self, X):
-                    """ Fit IDF to documents X """
-                    self.vectorizer.fit(X)
-                    y = super(TfidfVectorizer, self.vectorizer).transform(X)
-                    self.avdl = y.sum(1).mean()
-
-                def transform(self, q, X):
-                    """ Calculate BM25 between query q and documents X """
-                    b, k1, avdl = self.b, self.k1, self.avdl
-
-                    # apply CountVectorizer
-                    X = super(TfidfVectorizer, self.vectorizer).transform(X)
-                    len_X = X.sum(1).A1
-                    q, = super(TfidfVectorizer, self.vectorizer).transform([q])
-                    assert sparse.isspmatrix_csr(q)
-
-                    # convert to csc for better column slicing
-                    X = X.tocsc()[:, q.indices]
-                    denom = X + (k1 * (1 - b + b * len_X / avdl))[:, None]
-                    idf = self.vectorizer._tfidf.idf_[None, q.indices] - 1.
-                    numer = X.multiply(np.broadcast_to(idf, X.shape)) * (k1 + 1)                                                          
-                    return (numer / denom).sum(1).A1
-
             bm25 = BM25()
             bm25.fit(summaries)
             query_sample = bm25.transform(query, summaries)
@@ -100,14 +96,8 @@ class ChetahView(TemplateView) :
 
             sorted_top = sorted(weights, key = lambda x: x, reverse = True)[:10]
 
-            # Debug
-            #print(sorted_top)
-
             sorted_top_i = [np.where(query_sample == i) for i in sorted_top]
             top_indexes = [x[0][0] for x in sorted_top_i]
-
-            # Debug
-            #print('Query: ' + query + '\n')
 
             for i in top_indexes:
                 # Process the clusters associated with the PDF
@@ -122,8 +112,7 @@ class ChetahView(TemplateView) :
                     "summary_short": str(df_pdfs.summary[i])[:450] + "...", # Truncate summary after 450 characters
                     "summary_full": str(df_pdfs.summary[i]),
                 }
-                context['search_results'].append(pdf)       
-            # print(context)         
+                context['search_results'].append(pdf)             
 
             return render(request, "web/project_chetah.html", context)
 
