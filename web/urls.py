@@ -8,9 +8,7 @@ from django.views.generic import TemplateView
 app_name='web'
 urlpatterns = [
     path('', views.MainView.as_view(), name='all'),
-    # path('projects', views.ProjectsView.as_view(), name='projects'),
     path('projects/cio4good', views.CIO4GoodView.as_view(), name='cio4good'),
     path('projects/chetah', views.ChetahView.as_view(), name='chetah'),
-    # path('datasets', views.DataSetsView.as_view(), name='all'),
-    # path('contribute', views.ContributeView.as_view(), name='all'),
+    path('api/chetah/v1/<str:query>', views.chetah_search)
 ]

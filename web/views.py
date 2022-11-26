@@ -5,7 +5,7 @@ from django.views import View
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic import TemplateView
 from django.urls import reverse_lazy
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
 
 from web.models import Task, Project
@@ -57,6 +57,8 @@ class BM25(object):
         numer = X.multiply(np.broadcast_to(idf, X.shape)) * (k1 + 1)                                                          
         return (numer / denom).sum(1).A1
 
+bm25 = BM25()
+bm25.fit(summaries)
 
 class MainView(TemplateView) :
     def get(self, request):
@@ -85,8 +87,6 @@ class ChetahView(TemplateView) :
             query = request.POST['search-query']
             context['search_query'] = query
             
-            bm25 = BM25()
-            bm25.fit(summaries)
             query_sample = bm25.transform(query, summaries)
 
             weights = []
@@ -128,3 +128,29 @@ class ChetahView(TemplateView) :
 #         context['task_list'] = Task.objects.all()
 #         return context
 
+def chetah_search(request, query):
+    query_sample = bm25.transform(query, summaries)
+    results = []
+
+    weights = []
+    for i in query_sample:
+        if i > 1:
+            weights.append(i)
+
+    sorted_top = sorted(weights, key = lambda x: x, reverse = True)[:10]
+    sorted_top_i = [np.where(query_sample == i) for i in sorted_top]
+    top_indexes = [x[0][0] for x in sorted_top_i]
+
+    for i in top_indexes:
+        # Process the clusters associated with the PDF
+        clusters_list = []
+
+        # Create a new PDF dictionary and add it to the list of search results
+        pdf = {
+                "title": str(df_pdfs.Title[i]),
+                "date": df_pdfs.Date[i],
+                "link": str(df_pdfs.URL[i]),
+                "cluster": str(df_pdfs.cluster[i])
+                }
+        results.append(pdf)
+    return JsonResponse({ 'search_results': results })
