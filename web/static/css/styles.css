@@ -12,7 +12,7 @@
 /* Semantic UI Website Styling */
 
 .pusher{
-    background-image: url("../../../web/static/web/landing-hero.jpg");
+    background-image: url("/static/images/landing-hero.jpg");
     background-repeat: no-repeat;
     background-size: cover;
     margin: 0 !important;
